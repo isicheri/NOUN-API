@@ -5,7 +5,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
    app.enableCors({
-    origin: "*",
+    origin: ["http://localhost:5173", "https://noun-update-clone-web.onrender.com/"],
     credentials: true,
     allowedHeaders: ["Accept","Authorization","Content-Type","X-Requested-With","apollo-require-preflight"],
     methods: ["GET","PUT","POST","DELETE","OPTIONS"]
