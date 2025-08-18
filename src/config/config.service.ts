@@ -1,35 +1,34 @@
-import { Injectable,Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CONFIG_OPTIONS } from './constants';
-import {EnvConfig,ConfigOptions} from "./interfaces"
-
-
+import { EnvConfig, ConfigOptions } from './interfaces';
 
 @Injectable()
 export class ConfigService {
- 
-private envConfig: EnvConfig;
-    
+  private envConfig: EnvConfig = {};
+
   constructor(@Inject(CONFIG_OPTIONS) options: ConfigOptions) {
+    // First, load from .env file if it exists
     const filePath = `.env.${process.env.NODE_ENV || 'development'}`;
-    const envFile =   path.resolve(process.cwd(), filePath);
-    this.envConfig = dotenv.parse(fs.readFileSync(envFile));
-     let finalPath = envFile;
-    if (!fs.existsSync(envFile)) {
-      finalPath = path.resolve(process.cwd(), '.env');
+    const envFile = path.resolve(process.cwd(), filePath);
+
+    if (fs.existsSync(envFile)) {
+      this.envConfig = dotenv.parse(fs.readFileSync(envFile));
+    } else if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
+      this.envConfig = dotenv.parse(fs.readFileSync(path.resolve(process.cwd(), '.env')));
     }
 
-    if (!fs.existsSync(finalPath)) {
-      throw new Error(`No .env file found at ${envFile} or .env`);
-    }
-
-    this.envConfig = dotenv.parse(fs.readFileSync(finalPath));
+    // Merge process.env so deployed env vars override .env
+    this.envConfig = { ...this.envConfig, ...process.env } as unknown as EnvConfig;
   }
 
   get(key: string): string {
-    return this.envConfig[key];
+    const value = this.envConfig[key];
+    if (!value) {
+      throw new Error(`Missing environment variable: ${key}`);
+    }
+    return value;
   }
-
 }
