@@ -50,3 +50,11 @@ enum NewsCategory {
   GUIDES
   SCHOLARSHIP
 }
+
+
+model AcademicEvent {
+  id        String   @id @default(uuid())
+  title     String
+  target    DateTime   // target date/time for countdown
+  createdAt DateTime @default(now())
+}
