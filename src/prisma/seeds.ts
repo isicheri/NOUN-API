@@ -3,18 +3,14 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-//   await prisma.academicEvent.create({
-//     data: {
-//       title: "Semester Exam Clearance",
-//       target: new Date("2025-10-01T09:00:00Z"), // Example target
-//     },
-//   });
-
  const events = [
-    { title: "2025_2 TMA Begins", target: new Date("2025-08-18T00:00:00Z") },
-    { title: "2025_2 POP Exam Begins", target: new Date("2025-10-07T00:00:00Z") },
-    { title: "2025_2 e-Exam Begins", target: new Date("2025-11-04T00:00:00Z") },
-    { title: "Application for Admissions", target: new Date("2025-12-31T00:00:00Z") }
+   { title: "Session", target: new Date("2026-01-20T23:59:59Z") },
+    { title: "Semester", target: new Date("2025-11-30T23:59:59Z") },
+    { title: "Registration (Semester, course and examination)", target: new Date("2025-09-28T23:59:59Z") },
+    { title: "Dropping of course for exam", target: new Date("2025-09-28T23:59:59Z") },
+    { title: "Requests for change...", target: new Date("2025-09-28T23:59:59Z") },
+    { title: "Tutor Marked Assignment (TMA)", target: new Date("2025-09-28T23:59:59Z") },
+    { title: "Examination", target: new Date("2025-11-27T23:59:59Z") },
   ];
 
   await prisma.academicEvent.createMany({

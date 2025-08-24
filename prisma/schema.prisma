@@ -13,6 +13,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String?   // ✅ optional → works for Google-only users
+  provider   String   @default("local") // "local" | "google"
+  providerId String?   @unique // Google’s user ID
+  role      Role      @default(STUDENT) // ✅ admin vs student separation
+  cart      Cart[]    // ✅ supports “one active cart” per student
+  orders    Order[]   // ✅ history of completed checkouts
+  uploads   PDF[]     @relation("UploadedBy") // ✅ useful for Admin dashboard
+  profile   Profile?  @relation("userProfile") // ✅ profile data (name, avatar, etc.)
+  createdAt DateTime  @default(now())
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation("userProfile",fields: [userId], references: [id])
+  name      String
+  bio       String?
+  rating    Float    @default(0.0)
+  balance   Float    @default(0.0) // for payouts
+}
+
+model PDF {
+ id          String     @id @default(uuid())
+  title       String
+  description String
+  courseCode  String
+  level       String
+  price       Float
+  fileUrl     String
+  category    PdfCategory
+  uploadedBy  User       @relation("UploadedBy", fields: [uploadedById], references: [id])
+  uploadedById String
+  orderItems  OrderItem[]   // ✅ fix: linked via OrderItem, not Order
+  cartItems   CartItem[] 
+  createdAt   DateTime   @default(now())
+}
+
+
+
+enum PdfCategory {
+  PROJECT_SEMINAR
+  COURSE_SUMMARY
+  TMA_ARCHIVE
+  PAST_QUESTIONS
+  COURSE_MATERIAL
+}
+
+model Order {
+  id        String       @id @default(uuid())
+  user      User         @relation(fields: [userId], references: [id])
+  userId    String
+  items     OrderItem[]
+  total     Float
+  status    OrderStatus  @default(PENDING)
+  createdAt DateTime     @default(now())
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  pdf       PDF      @relation(fields: [pdfId], references: [id])
+  pdfId     String
+  quantity  Int       @default(1)
+  price     Float     // store price at purchase time (so if price changes later, records are consistent)
+}
+enum Role {
+  STUDENT
+  STAFF
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
 model News {
   id String  @id @default(uuid())
   title String 
@@ -57,4 +138,24 @@ model AcademicEvent {
   title     String
   target    DateTime   // target date/time for countdown
   createdAt DateTime @default(now())
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  items     CartItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  cartId    String
+  pdf       PDF      @relation(fields: [pdfId], references: [id])
+  pdfId     String
+  quantity  Int      @default(1) // in case someone buys multiple (rare for PDFs, but standard e-commerce)
+
+  @@unique([cartId, pdfId])
 }
