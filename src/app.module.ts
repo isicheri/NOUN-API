@@ -7,16 +7,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AcademiceventModule } from './modules/academicEvent/academicevent.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/users/users.module';
-import { JwtAuthGuard } from './modules/auth/guards/jwt-guard.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule],
   controllers: [],
-  providers: [PrismaService,{
-    provide: APP_GUARD,
-    useClass: JwtAuthGuard
-  },
+  providers: [PrismaService,
 {
   provide: APP_GUARD,
   useClass: RolesGuard

@@ -23,6 +23,7 @@ model User {
   cart      Cart[]    // ✅ supports “one active cart” per student
   orders    Order[]   // ✅ history of completed checkouts
   uploads   PDF[]     @relation("UploadedBy") // ✅ useful for Admin dashboard
+  download  Download[] 
   profile   Profile?  @relation("userProfile") // ✅ profile data (name, avatar, etc.)
   createdAt DateTime  @default(now())
 }
@@ -43,11 +44,13 @@ model PDF {
   description String
   courseCode  String
   level       String
-  price       Float
+  price       Float @default(0.0)
   fileUrl     String
+  isFree      Boolean @default(false)
   category    PdfCategory
   uploadedBy  User       @relation("UploadedBy", fields: [uploadedById], references: [id])
   uploadedById String
+    downloads    Download[] 
   orderItems  OrderItem[]   // ✅ fix: linked via OrderItem, not Order
   cartItems   CartItem[] 
   createdAt   DateTime   @default(now())
@@ -158,4 +161,17 @@ model CartItem {
   quantity  Int      @default(1) // in case someone buys multiple (rare for PDFs, but standard e-commerce)
 
   @@unique([cartId, pdfId])
+}
+
+
+model Download {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  pdf           PDF      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+  pdfId         String
+  downloadedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([pdfId])  
 }

@@ -2,7 +2,7 @@ import { Body, Controller, Post, UseGuards,Req, Request, Get, Res } from "@nestj
 import { LocalAuthGuard } from "./guards/local-guard.guard";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-guard.guard";
-import { AuthDto } from "./dto/auth-dto";
+import { AuthDto, CreateUserDto } from "./dto/auth-dto";
 import { AuthRequest } from "./types/auth-types";
 import { AuthGuard } from '@nestjs/passport';
 
@@ -15,7 +15,7 @@ export class AuthController {
 constructor(private authService: AuthService) {}
 
   @Post('signup')
-  async signup(@Body() body: AuthDto) {
+  async signup(@Body() body: CreateUserDto) {
     return this.authService.signup(body);
   }
 
