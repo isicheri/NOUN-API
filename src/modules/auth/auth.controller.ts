@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards,Req, Request, Get, Res } from "@nestjs/common";
+import { Body, Controller, Post, UseGuards,Req, Request, Get, Res, Patch, Query } from "@nestjs/common";
 import { LocalAuthGuard } from "./guards/local-guard.guard";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-guard.guard";
@@ -42,6 +42,20 @@ constructor(private authService: AuthService) {}
   const role = user.role; // 'STUDENT' or 'ADMIN'
   return res.redirect(`${process.env.FRONTEND_MAIN_URL}/auth/success?token=${accessToken}&role=${role}&redirectTo=${req.query.redirectTo || "/"}`);
   }
+
+  
+  @Post("/request-reset-password")
+  async requestResetPassword(@Body() body:Partial<AuthDto>) {
+   return this.authService.RequestResetPassword(body,"reset@nounedu.net");
+  }
+
+@Patch("/reset-password")
+async ResetPassword(
+  @Query("token") token: string,
+  @Body() body: Partial<AuthDto>
+) {
+  return this.authService.ResetPassword(token, body);
+}
 
   
 @UseGuards(LocalAuthGuard)

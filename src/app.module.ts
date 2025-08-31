@@ -8,9 +8,11 @@ import { AcademiceventModule } from './modules/academicEvent/academicevent.modul
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/users/users.module';
 import { RolesGuard } from './common/guards/roles.guard';
+import { EmailModule } from './utilities/email/email.module';
+import { PdfModule } from './modules/pdf/pdf.module';
 
 @Module({
-  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule],
+  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule],
   controllers: [],
   providers: [PrismaService,
 {

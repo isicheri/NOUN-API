@@ -7,6 +7,8 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { GoogleStrategy } from "./strategies/google.strategy";
+import { ConfigService } from "@nestjs/config";
+import { EmailService } from "src/utilities/email/email.service";
 
 
 
@@ -18,7 +20,7 @@ import { GoogleStrategy } from "./strategies/google.strategy";
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  providers: [AuthService, PrismaService, LocalStrategy, JwtStrategy,GoogleStrategy],
+  providers: [AuthService, PrismaService, LocalStrategy, JwtStrategy,GoogleStrategy,ConfigService,EmailService],
   controllers: [AuthController],
 })
 export class AuthModule {}

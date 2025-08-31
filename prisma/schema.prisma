@@ -45,12 +45,12 @@ model PDF {
   courseCode  String
   level       String
   price       Float @default(0.0)
-  fileUrl     String
+  fileKey     String //fileKey --> might change later
   isFree      Boolean @default(false)
   category    PdfCategory
   uploadedBy  User       @relation("UploadedBy", fields: [uploadedById], references: [id])
   uploadedById String
-    downloads    Download[] 
+  downloads    Download[] 
   orderItems  OrderItem[]   // ✅ fix: linked via OrderItem, not Order
   cartItems   CartItem[] 
   createdAt   DateTime   @default(now())

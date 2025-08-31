@@ -12,7 +12,7 @@ async function bootstrap() {
     ],
     credentials: true,
     allowedHeaders: ["Accept","Authorization","Content-Type","X-Requested-With","apollo-require-preflight"],
-    methods: ["GET","PUT","POST","DELETE","OPTIONS"]
+    methods: ["GET","PUT","POST","DELETE","PATCH","OPTIONS"]
   })
 
     app.useGlobalPipes(new ValidationPipe({
