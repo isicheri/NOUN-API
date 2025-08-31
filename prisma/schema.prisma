@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,49 +8,130 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String?   // ✅ optional → works for Google-only users
-  provider   String   @default("local") // "local" | "google"
-  providerId String?   @unique // Google’s user ID
-  role      Role      @default(STUDENT) // ✅ admin vs student separation
-  cart      Cart[]    // ✅ supports “one active cart” per student
-  orders    Order[]   // ✅ history of completed checkouts
-  uploads   PDF[]     @relation("UploadedBy") // ✅ useful for Admin dashboard
-  download  Download[] 
-  profile   Profile?  @relation("userProfile") // ✅ profile data (name, avatar, etc.)
-  createdAt DateTime  @default(now())
+  id         String     @id @default(uuid())
+  email      String     @unique
+  password   String?
+  role       Role       @default(STUDENT)
+  createdAt  DateTime   @default(now())
+  provider   String     @default("local")
+  providerId String?    @unique
+  cart       Cart[]
+  download   Download[]
+  orders     Order[]
+  uploads    PDF[]      @relation("UploadedBy")
+  profile    Profile?   @relation("userProfile")
 }
 
 model Profile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation("userProfile",fields: [userId], references: [id])
-  name      String
-  bio       String?
-  rating    Float    @default(0.0)
-  balance   Float    @default(0.0) // for payouts
+  id      String  @id @default(uuid())
+  userId  String  @unique
+  name    String
+  bio     String?
+  rating  Float   @default(0.0)
+  balance Float   @default(0.0)
+  user    User    @relation("userProfile", fields: [userId], references: [id])
 }
 
 model PDF {
- id          String     @id @default(uuid())
-  title       String
-  description String
-  courseCode  String
-  level       String
-  price       Float @default(0.0)
-  fileKey     String //fileKey --> might change later
-  isFree      Boolean @default(false)
-  category    PdfCategory
-  uploadedBy  User       @relation("UploadedBy", fields: [uploadedById], references: [id])
+  id           String      @id @default(uuid())
+  title        String
+  description  String
+  courseCode   String
+  level        String
+  price        Float       @default(0.0)
+  fileKey      String
   uploadedById String
-  downloads    Download[] 
-  orderItems  OrderItem[]   // ✅ fix: linked via OrderItem, not Order
-  cartItems   CartItem[] 
-  createdAt   DateTime   @default(now())
+  createdAt    DateTime    @default(now())
+  category     PdfCategory
+  isFree       Boolean     @default(false)
+  cartItems    CartItem[]
+  downloads    Download[]
+  orderItems   OrderItem[]
+  uploadedBy   User        @relation("UploadedBy", fields: [uploadedById], references: [id])
 }
 
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  total     Float
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+}
 
+model OrderItem {
+  id       String @id @default(uuid())
+  orderId  String
+  pdfId    String
+  quantity Int    @default(1)
+  price    Float
+  order    Order  @relation(fields: [orderId], references: [id])
+  pdf      PDF    @relation(fields: [pdfId], references: [id])
+}
+
+model News {
+  id        String        @id @default(uuid())
+  title     String
+  category  NewsCategory  @default(NEWSUPDATE)
+  images    String[]
+  createdAt DateTime      @default(now())
+  comment   NewsComment[]
+}
+
+model NewsComment {
+  id        String   @id @default(uuid())
+  text      String
+  newsId    String
+  createdAt DateTime @default(now())
+  new       News     @relation(fields: [newsId], references: [id])
+}
+
+model Quotes {
+  id        String   @id @default(uuid())
+  text      String
+  author    String
+  createdAt DateTime @default(now())
+}
+
+model AcademicEvent {
+  id        String   @id @default(uuid())
+  title     String
+  target    DateTime
+  createdAt DateTime @default(now())
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id       String @id @default(uuid())
+  cartId   String
+  pdfId    String
+  quantity Int    @default(1)
+  cart     Cart   @relation(fields: [cartId], references: [id])
+  pdf      PDF    @relation(fields: [pdfId], references: [id])
+
+  @@unique([cartId, pdfId])
+}
+
+model Download {
+  id           String   @id @default(uuid())
+  userId       String
+  pdfId        String
+  downloadedAt DateTime @default(now())
+  pdf          PDF      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([pdfId])
+}
 
 enum PdfCategory {
   PROJECT_SEMINAR
@@ -66,29 +141,10 @@ enum PdfCategory {
   COURSE_MATERIAL
 }
 
-model Order {
-  id        String       @id @default(uuid())
-  user      User         @relation(fields: [userId], references: [id])
-  userId    String
-  items     OrderItem[]
-  total     Float
-  status    OrderStatus  @default(PENDING)
-  createdAt DateTime     @default(now())
-}
-
-model OrderItem {
-  id        String   @id @default(uuid())
-  order     Order    @relation(fields: [orderId], references: [id])
-  orderId   String
-  pdf       PDF      @relation(fields: [pdfId], references: [id])
-  pdfId     String
-  quantity  Int       @default(1)
-  price     Float     // store price at purchase time (so if price changes later, records are consistent)
-}
 enum Role {
   STUDENT
-  STAFF
   ADMIN
+  STAFF
 }
 
 enum OrderStatus {
@@ -97,81 +153,8 @@ enum OrderStatus {
   FAILED
 }
 
-model News {
-  id String  @id @default(uuid())
-  title String 
-  category NewsCategory @default(NEWSUPDATE)
-  images String[]
-
-  comment NewsComment[]
-  
-
-  createdAt DateTime @default(now())
-}
-
- 
-model NewsComment {
-  id String @id @default(uuid())
-  text String 
-  newsId String 
-
-  new News @relation(fields: [newsId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-
-model Quotes {
-  id String @id @default(uuid())
-  text String 
-  author String
-
-  createdAt DateTime @default(now())
-}
-
 enum NewsCategory {
   NEWSUPDATE
   GUIDES
   SCHOLARSHIP
-}
-
-
-model AcademicEvent {
-  id        String   @id @default(uuid())
-  title     String
-  target    DateTime   // target date/time for countdown
-  createdAt DateTime @default(now())
-}
-
-model Cart {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  items     CartItem[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model CartItem {
-  id        String   @id @default(uuid())
-  cart      Cart     @relation(fields: [cartId], references: [id])
-  cartId    String
-  pdf       PDF      @relation(fields: [pdfId], references: [id])
-  pdfId     String
-  quantity  Int      @default(1) // in case someone buys multiple (rare for PDFs, but standard e-commerce)
-
-  @@unique([cartId, pdfId])
-}
-
-
-model Download {
-  id            String   @id @default(uuid())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  pdf           PDF      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
-  pdfId         String
-  downloadedAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([pdfId])  
 }
