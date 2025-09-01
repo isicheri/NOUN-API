@@ -1,8 +1,9 @@
 // pdf.controller.ts
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { PdfService } from './pdf.service';
 import { PdfCategory } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-guard.guard';
+import { AuthRequest } from '../auth/types/auth-types';
 
 @Controller('pdfs')
 export class PdfController {
@@ -28,4 +29,15 @@ export class PdfController {
       limit: parseInt(limit, 10),
     });
   }
+
+
+  @UseGuards(JwtAuthGuard)
+  @Get("/:pdfId/download")
+  async downloadPdf(
+    @Param("pdfId") id: string,
+    @Req() req:AuthRequest
+  ){
+   return await this.pdfService.downloadpdf(id,req);
+  }
+
 }
