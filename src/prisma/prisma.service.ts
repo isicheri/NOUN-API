@@ -11,5 +11,15 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy,OnMod
    async  onModuleDestroy() {
         await this.$disconnect();
     }
+
+    async isDbConnected(): Promise<boolean> {
+    try {
+      // A simple query to check DB connectivity
+      await this.$queryRaw`SELECT 1`;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
     
 }

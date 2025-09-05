@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { SupabaseModule } from './supabase/supabase.module';
 import { PrismaService } from './prisma/prisma.service';
@@ -10,14 +10,22 @@ import { UserModule } from './modules/users/users.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { EmailModule } from './utilities/email/email.module';
 import { PdfModule } from './modules/pdf/pdf.module';
+import { PrismaHealthMiddleware } from './prisma/middleware/prismaHealth.middleware';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule],
-  controllers: [],
+  controllers: [AppController],
   providers: [PrismaService,
 {
   provide: APP_GUARD,
   useClass: RolesGuard
-}],
+},PrismaHealthMiddleware],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+   constructor(private readonly prismaHealthMiddleware: PrismaHealthMiddleware) {}
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(PrismaHealthMiddleware).forRoutes('*');
+  }
+}

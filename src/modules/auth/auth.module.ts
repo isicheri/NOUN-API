@@ -9,6 +9,8 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
 import { GoogleStrategy } from "./strategies/google.strategy";
 import { ConfigService } from "@nestjs/config";
 import { EmailService } from "src/utilities/email/email.service";
+import { JwtAuthGuard } from "./guards/jwt-guard.guard";
+import { RolesGuard } from "src/common/guards/roles.guard";
 
 
 
@@ -20,7 +22,8 @@ import { EmailService } from "src/utilities/email/email.service";
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  providers: [AuthService, PrismaService, LocalStrategy, JwtStrategy,GoogleStrategy,ConfigService,EmailService],
+  providers: [AuthService, PrismaService, LocalStrategy, JwtStrategy,GoogleStrategy,ConfigService,EmailService,JwtAuthGuard,RolesGuard],
   controllers: [AuthController],
+  exports: []
 })
 export class AuthModule {}

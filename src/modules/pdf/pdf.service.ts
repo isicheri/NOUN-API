@@ -6,6 +6,10 @@ const B2 = require("backblaze-b2");
 import { ConfigService } from '@nestjs/config';
 import { AuthRequest } from '../auth/types/auth-types';
 import { EmailService } from 'src/utilities/email/email.service';
+import { CreatePdfDto } from './dto/create-pdf.dto';
+import axios from 'axios';
+import * as FormData from 'form-data';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class PdfService {
@@ -150,8 +154,8 @@ export class PdfService {
   </div>
 `;
 
-    let mail =  this.emailService.sendMail({to: req.user.email,from: "info@nounedu.net"},htmlContent,"Requesting Pdf Download");
-    return mail;    
+    let mail = await this.emailService.sendMail({to: req.user.email,from: "info@nounedu.net"},htmlContent,"Requesting Pdf Download");
+    return {...mail,signedUrl: signedUrl};    
   }
 
   private async getSignedUrl(fileKey: string): Promise<string> {
@@ -167,6 +171,43 @@ export class PdfService {
   const signedUrl = `${baseUrl}?Authorization=${response.data.authorizationToken}`;
 
   return signedUrl;
-}
+  }
+
+
+async uploadPdf(file: Express.Multer.File, dto: CreatePdfDto,req:AuthRequest) {
+    if (!file) throw new BadRequestException('File is required');// checks if there is not file to upload
+    if (file.mimetype !== 'application/pdf')  throw new BadRequestException('Only PDF files are allowed'); //file type validation
+    if(req.user.role !== "ADMIN") throw new BadRequestException("cannot perform task");
+    const fileKey = `${uuid()}-${file.originalname}`;
+    const formData = new FormData();
+    formData.append('file', file.buffer, fileKey);
+    // Example: Signed upload (assuming you generated an uploadUrl + authToken)
+    await this.b2.authorize();
+    const uploadAuth = await this.b2.getUploadUrl({ bucketId: this.configService.get<string>("B2_BUCKET_ID")  });
+
+    try {
+  await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
+  headers: {
+    Authorization: uploadAuth.data.authorizationToken,
+    'X-Bz-File-Name': fileKey,
+    'Content-Type': file.mimetype,
+             },
+         });
+    } catch (error) {
+       console.error("Upload failed", error?.response?.data || error.message);
+  throw new BadRequestException("Failed to upload PDF to storage");
+    }
+
+    // 🔹 Step 2: Save in DB
+    const pdf = await this.prisma.pDF.create({
+      data: {
+        ...dto,
+        fileKey,
+        uploadedById: req.user.userId, // dynamically take from request.user.id
+      },
+    });
+
+    return pdf;
+  }
   
 }

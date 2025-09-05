@@ -100,7 +100,7 @@ async RequestResetPassword({ email }: Partial<AuthDto>,from:string) {
   const token = await this.jwtService.sign({ email }, { expiresIn: '15m' });
 
   // 4. Create a reset link (replace with your actual front-end URL)
-  const resetLink = `${this.configService.get<string>('FRONTEND_MAIN_URL')}auth/reset_password?token=${token}`;
+  const resetLink = `${this.configService.get<string>('FRONTEND_MAIN_URL')}/auth/reset_password?token=${token}`;
 
   // 5. Build the email content
 const htmlContent = `
