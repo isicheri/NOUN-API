@@ -1,20 +1,18 @@
 // pdf.controller.ts
-import { Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PdfService } from './pdf.service';
 import { PdfCategory } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-guard.guard';
 import { AuthRequest } from '../auth/types/auth-types';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {  FilesInterceptor } from '@nestjs/platform-express';
 import { CreatePdfDto } from './dto/create-pdf.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Request } from 'express';
 
 @Controller('pdfs')
 export class PdfController {
   constructor(private readonly pdfService: PdfService) {}
-
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -45,35 +43,39 @@ export class PdfController {
   ){
    return await this.pdfService.downloadpdf(id,req);
   }
-
   
   // only admin can upload
- @Post('upload')
-@UseGuards(JwtAuthGuard,RolesGuard)
+@Post('upload')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
-@UseInterceptors(FileInterceptor('file'))
-async uploadPdf(
-  @UploadedFile(new ParseFilePipe({
+@UseInterceptors(FilesInterceptor('files', 5, {
+  limits: { fileSize: 15 * 1024 * 1024 },
+}))
+async uploadPdfs(
+  @UploadedFiles(new ParseFilePipe({
     validators: [
-      new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 15, message: "file size must be 15mb or less" }),
-      new FileTypeValidator({ fileType: /^application\/pdf$/ })
-    ]
-  })) file: Express.Multer.File,
-  @Body() createPdfDto: CreatePdfDto,
+      new MaxFileSizeValidator({ maxSize: 15 * 1024 * 1024 }),
+      new FileTypeValidator({ fileType: /^application\/pdf$/ }),
+    ],
+  })) files: Express.Multer.File[],
+  @Body('metadata') rawMetadata: string, // string from multipart/form-data
   @Req() req: AuthRequest
 ) {
-  return await this.pdfService.uploadPdf(file, createPdfDto, req);
+  if (!files || files.length === 0) {
+    throw new BadRequestException('At least one PDF file is required');
+  }
+
+  let metadataArray: CreatePdfDto[];
+
+  try {
+    metadataArray = JSON.parse(rawMetadata);
+  } catch (err) {
+    throw new BadRequestException('Invalid metadata format');
+  }
+
+  // console.log(metadataArray)
+
+  return await this.pdfService.uploadMultiplePdfs(files, metadataArray, req);
 }
-
-
-@Post('test-auth')
-@UseGuards(JwtAuthGuard)
-getUser(@Req() req: Request) {
-
-  console.log('req.user in test-auth:', req.user);
-  return req.user;
-}
-
-
 
 }

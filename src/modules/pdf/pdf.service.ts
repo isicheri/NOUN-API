@@ -1,14 +1,13 @@
 // pdf.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PdfCategory } from '@prisma/client';
+import { PDF, PdfCategory } from '@prisma/client';
 const B2 = require("backblaze-b2");  
 import { ConfigService } from '@nestjs/config';
 import { AuthRequest } from '../auth/types/auth-types';
 import { EmailService } from 'src/utilities/email/email.service';
 import { CreatePdfDto } from './dto/create-pdf.dto';
 import axios from 'axios';
-import * as FormData from 'form-data';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
@@ -174,40 +173,101 @@ export class PdfService {
   }
 
 
-async uploadPdf(file: Express.Multer.File, dto: CreatePdfDto,req:AuthRequest) {
-    if (!file) throw new BadRequestException('File is required');// checks if there is not file to upload
-    if (file.mimetype !== 'application/pdf')  throw new BadRequestException('Only PDF files are allowed'); //file type validation
-    if(req.user.role !== "ADMIN") throw new BadRequestException("cannot perform task");
-    const fileKey = `${uuid()}-${file.originalname}`;
-    const formData = new FormData();
-    formData.append('file', file.buffer, fileKey);
-    // Example: Signed upload (assuming you generated an uploadUrl + authToken)
-    await this.b2.authorize();
-    const uploadAuth = await this.b2.getUploadUrl({ bucketId: this.configService.get<string>("B2_BUCKET_ID")  });
+// async uploadPdf(file: Express.Multer.File, dto: CreatePdfDto,req:AuthRequest) {
+//     if (!file) throw new BadRequestException('File is required');// checks if there is not file to upload
+//     if (file.mimetype !== 'application/pdf')  throw new BadRequestException('Only PDF files are allowed'); //file type validation
+//     if(req.user.role !== "ADMIN") throw new BadRequestException("cannot perform task");
+//     const fileKey = `${uuid()}-${file.originalname}`;
+//     const formData = new FormData();
+//     formData.append('file', file.buffer, fileKey);
+//     // Example: Signed upload (assuming you generated an uploadUrl + authToken)
+//     await this.b2.authorize();
+//     const uploadAuth = await this.b2.getUploadUrl({ bucketId: this.configService.get<string>("B2_BUCKET_ID")  });
 
-    try {
-  await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
-  headers: {
-    Authorization: uploadAuth.data.authorizationToken,
-    'X-Bz-File-Name': fileKey,
-    'Content-Type': file.mimetype,
-             },
-         });
-    } catch (error) {
-       console.error("Upload failed", error?.response?.data || error.message);
-  throw new BadRequestException("Failed to upload PDF to storage");
+//     try {
+//   await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
+//   headers: {
+//     Authorization: uploadAuth.data.authorizationToken,
+//     'X-Bz-File-Name': fileKey,
+//     'Content-Type': file.mimetype,
+//              },
+//          });
+//     } catch (error) {
+//        console.error("Upload failed", error?.response?.data || error.message);
+//   throw new BadRequestException("Failed to upload PDF to storage");
+//     }
+
+//     // 🔹 Step 2: Save in DB
+//     const pdf = await this.prisma.pDF.create({
+//       data: {
+//         ...dto,
+//         fileKey,
+//         uploadedById: req.user.userId, // dynamically take from request.user.id
+//       },
+//     });
+
+//     return pdf;
+//   }
+
+  async uploadMultiplePdfs(
+    files: Express.Multer.File[],
+    metadataArray: CreatePdfDto[], 
+    req: AuthRequest
+  ) {
+    if (req.user.role !== 'ADMIN') {
+      throw new BadRequestException('Unauthorized');
     }
 
-    // 🔹 Step 2: Save in DB
-    const pdf = await this.prisma.pDF.create({
-      data: {
-        ...dto,
-        fileKey,
-        uploadedById: req.user.userId, // dynamically take from request.user.id
-      },
+    await this.b2.authorize();
+
+    const uploadAuth = await this.b2.getUploadUrl({
+      bucketId: this.configService.get<string>('B2_BUCKET_ID'),
     });
 
-    return pdf;
+   if (files.length !== metadataArray.length) {
+  throw new BadRequestException('Files and metadata count mismatch');
+}
+
+const savedPdfs: PDF[] = [];
+
+for (let i = 0; i < files.length; i++) {
+  const file = files[i];
+  const dto = metadataArray[i];
+
+  if (file.mimetype !== 'application/pdf') {
+    throw new BadRequestException(`${file.originalname} is not a valid PDF`);
+  }
+
+  const fileKey = `${uuid()}-${file.originalname}`;
+
+  try {
+    await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
+      headers: {
+        Authorization: uploadAuth.data.authorizationToken,
+        'X-Bz-File-Name': fileKey,
+        'Content-Type': file.mimetype,
+         'X-Bz-Content-Sha1': 'do_not_verify'
+      },
+    });
+  } catch (error) {
+    console.error('Upload failed:', error?.response?.data || error.message);
+    throw new BadRequestException(
+      `Failed to upload ${file.originalname} to storage`
+    );
+  }
+
+  const saved = await this.prisma.pDF.create({
+    data: {
+      ...dto,
+      fileKey,
+      uploadedById: req.user.userId,
+    },
+  });
+
+  savedPdfs.push(saved);
+}
+
+return savedPdfs;
   }
   
 }

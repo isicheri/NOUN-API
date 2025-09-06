@@ -18,59 +18,58 @@ const prisma = new PrismaClient();
 //   isFree       Boolean     @default(false)
 
 
-//"ANP313" "ANP313_AEM783" "ANP314" "ANP401" "ANP403" "ANP407" "ANP501" "ANP502" "ANP503" "ANP504" "ANP505" "ANP506" "ANP507" "ANP508" "ANP509" "ANP510" "ANP511" "ANP512" "ANP513" "ANP514" 
-
+//  "ARA421" "ARA422" "ARA424" "ARA425" "ARA426" 
 
 
 const adminId = "1823d607-1ae1-46a9-a671-4ff13ba3cace";
 
 const data = [
     {
-    title: "ARA111",
-    description:  `Course material for ARA111`,
-    courseCode:  "ARA111",
-    level:    "100",
-    fileKey: "course-materials/ARA111.pdf",
+    title: "ARA421",
+    description:  `Course material for ARA421`,
+    courseCode:  "ARA421",
+    level:    "400",
+    fileKey: "course-materials/ARA421.pdf",
     uploadedById: adminId,
     category: PdfCategory.COURSE_MATERIAL,
     isFree: true
     },
      {
-    title: "ANP308",
-    description:  `Course material for ANP308`,
-    courseCode:  "ANP308",
-    level:    "300",
-    fileKey: "course-materials/ANP308.pdf",
+    title: "ARA422",
+    description:  `Course material for ARA422`,
+    courseCode:  "ARA422",
+    level:    "400",
+    fileKey: "course-materials/ARA422.pdf",
     uploadedById: adminId,
     category: PdfCategory.COURSE_MATERIAL,
     isFree: true
     },
      {
-    title: "ANP309",
-    description:  `Course material for ANP309`,
-    courseCode:  "ANP309",
-    level:    "300",
-    fileKey: "course-materials/ANP309.pdf",
+    title: "ARA424",
+    description:  `Course material for ARA424`,
+    courseCode:  "ARA424",
+    level:    "400",
+    fileKey: "course-materials/ARA424.pdf",
     uploadedById: adminId,
     category: PdfCategory.COURSE_MATERIAL,
     isFree: true
     },
      {
-    title: "ANP310",
-    description:  `Course material for ANP310`,
-    courseCode:  "ANP310",
-    level:    "300",
-    fileKey: "course-materials/ANP310.pdf",
+    title: "ARA425",
+    description:  `Course material for ARA425`,
+    courseCode:  "ARA425",
+    level:    "400",
+    fileKey: "course-materials/ARA425.pdf",
     uploadedById: adminId,
     category: PdfCategory.COURSE_MATERIAL,
     isFree: true
     },
-      {
-    title: "ANP312",
-    description:  `Course material for ANP312`,
-    courseCode:  "ANP312",
-    level:    "300",
-    fileKey: "course-materials/ANP312.pdf",
+    {
+    title: "ARA426",
+    description:  `Course material for ARA426`,
+    courseCode:  "ARA426",
+    level:    "400",
+    fileKey: "course-materials/ARA426.pdf",
     uploadedById: adminId,
     category: PdfCategory.COURSE_MATERIAL,
     isFree: true

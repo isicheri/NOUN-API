@@ -12,11 +12,16 @@ import { EmailModule } from './utilities/email/email.module';
 import { PdfModule } from './modules/pdf/pdf.module';
 import { PrismaHealthMiddleware } from './prisma/middleware/prismaHealth.middleware';
 import { AppController } from './app.controller';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-guard.guard';
 
 @Module({
   imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule],
   controllers: [AppController],
   providers: [PrismaService,
+      {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // ✅ Must come first
+    },
 {
   provide: APP_GUARD,
   useClass: RolesGuard

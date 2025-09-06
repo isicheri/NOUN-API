@@ -5,6 +5,7 @@ import { JwtAuthGuard } from "./guards/jwt-guard.guard";
 import { AuthDto, CreateUserDto } from "./dto/auth-dto";
 import { AuthRequest } from "./types/auth-types";
 import { AuthGuard } from '@nestjs/passport';
+import { Public } from "src/common/decorators/public.decorator";
 
 
 
@@ -14,11 +15,13 @@ export class AuthController {
 
 constructor(private authService: AuthService) {}
 
+  @Public()
   @Post('signup')
   async signup(@Body() body: CreateUserDto) {
     return this.authService.signup(body);
   }
 
+  @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req: AuthRequest) {
@@ -31,10 +34,12 @@ constructor(private authService: AuthService) {}
     return req;
   }   
   
+  @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {}
 
+  @Public()
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req,@Res() res) {
@@ -43,12 +48,14 @@ constructor(private authService: AuthService) {}
   return res.redirect(`${process.env.FRONTEND_MAIN_URL}/auth/success?token=${accessToken}&role=${role}&redirectTo=${req.query.redirectTo || "/"}`);
   }
 
-  
+
+  @Public()
   @Post("/request-reset-password")
   async requestResetPassword(@Body() body:Partial<AuthDto>) {
    return this.authService.RequestResetPassword(body,"reset@nounedu.net");
   }
 
+@Public()
 @Patch("/reset-password")
 async ResetPassword(
   @Query("token") token: string,
@@ -58,6 +65,7 @@ async ResetPassword(
 }
 
   
+@Public()
 @UseGuards(LocalAuthGuard)
 @Post('logout')
 async logout(@Request() req,@Res() res) {

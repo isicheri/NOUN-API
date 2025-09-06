@@ -1,5 +1,6 @@
 import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "./prisma/prisma.service";
+import { Public } from "./common/decorators/public.decorator";
 
 
 
@@ -8,6 +9,7 @@ export class AppController {
     
 constructor(private  prismaService: PrismaService) {}
 
+    @Public()
     @Get('health')
 async health() {
   const isConnected = await this.prismaService.isDbConnected();
