@@ -269,5 +269,66 @@ for (let i = 0; i < files.length; i++) {
 
 return savedPdfs;
   }
+
+
+async deletePdfFile(pdfId: string, req: AuthRequest) {
+  if (req.user.role !== 'ADMIN') {
+    throw new BadRequestException('Unauthorized access');
+  }
+
+  const pdf = await this.prisma.pDF.findUnique({
+    where: { id: pdfId },
+  });
+
+  if (!pdf) {
+    throw new NotFoundException('PDF not found');
+  }
+
+  // 1. Authorize B2
+  await this.b2.authorize();
+
+  // 2. Get file info to get fileId
+  let fileInfo;
+  try {
+    const response = await this.b2.listFileNames({
+      bucketId: this.configService.get<string>('B2_BUCKET_ID'),
+      prefix: pdf.fileKey,
+      maxFileCount: 1,
+    });
+
+    fileInfo = response.data.files.find(
+      (file: any) => file.fileName === pdf.fileKey
+    );
+
+    if (!fileInfo) {
+      throw new NotFoundException('File not found in storage');
+    }
+  } catch (err) {
+    console.error('Error retrieving file info:', err.message);
+    throw new BadRequestException('Failed to retrieve file from storage');
+  }
+
+  // 3. Delete file from B2
+  try {
+    await this.b2.deleteFileVersion({
+      fileName: fileInfo.fileName,
+      fileId: fileInfo.fileId,
+    });
+  } catch (err) {
+    console.error('Error deleting from B2:', err.message);
+    throw new BadRequestException('Failed to delete file from storage');
+  }
+
+  // 4. Delete from Prisma DB
+  await this.prisma.pDF.delete({
+    where: { id: pdfId },
+  });
+
+  return {
+    success: true,
+    message: 'PDF deleted successfully',
+  };
+}
+
   
 }

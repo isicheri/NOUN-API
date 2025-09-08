@@ -1,5 +1,5 @@
 // pdf.controller.ts
-import { BadRequestException, Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PdfService } from './pdf.service';
 import { PdfCategory } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-guard.guard';
@@ -77,5 +77,16 @@ async uploadPdfs(
 
   return await this.pdfService.uploadMultiplePdfs(files, metadataArray, req);
 }
+
+
+@Delete("/:pdfId/delete")
+@UseGuards(JwtAuthGuard,RolesGuard)
+@Roles(Role.ADMIN)
+async deletePdf(
+  @Param("pdfId") id: string,
+  @Req() request: AuthRequest
+) {
+  this.pdfService.deletePdfFile(id,request);
+} 
 
 }
