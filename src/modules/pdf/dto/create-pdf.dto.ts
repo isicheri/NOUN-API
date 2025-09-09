@@ -14,6 +14,7 @@ export class CreatePdfDto {
   @IsString()
   level: string;
 
+  
   @IsEnum(PdfCategory)
   category: PdfCategory;
 

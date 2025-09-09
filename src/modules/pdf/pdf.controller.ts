@@ -1,5 +1,5 @@
 // pdf.controller.ts
-import { BadRequestException, Body, Controller, Delete, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors,Put } from '@nestjs/common';
 import { PdfService } from './pdf.service';
 import { PdfCategory } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-guard.guard';
@@ -9,6 +9,7 @@ import {  FilesInterceptor } from '@nestjs/platform-express';
 import { CreatePdfDto } from './dto/create-pdf.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { UpdatePdfDto } from './dto/update-pdf.dto';
 
 @Controller('pdfs')
 export class PdfController {
@@ -88,5 +89,29 @@ async deletePdf(
 ) {
   this.pdfService.deletePdfFile(id,request);
 } 
+
+@Get("/:pdfId/view")
+@UseGuards(JwtAuthGuard,RolesGuard)
+@Roles(Role.ADMIN)
+async getpdfById(
+  @Param("pdfId") id: string,
+  @Req() request: AuthRequest
+) {
+return await this.pdfService.getPdfById(id,request)
+}
+
+
+@Put("/:pdfId/update")
+@UseGuards(JwtAuthGuard,RolesGuard)
+@Roles(Role.ADMIN)
+async updatePdfById(
+  @Param("pdfId") id: string,
+  @Req() request: AuthRequest,
+  @Body() body: UpdatePdfDto
+) {
+return await this.pdfService.updatePdfById(id,request,body);
+}
+
+
 
 }

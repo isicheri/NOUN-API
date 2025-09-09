@@ -9,6 +9,7 @@ import { EmailService } from 'src/utilities/email/email.service';
 import { CreatePdfDto } from './dto/create-pdf.dto';
 import axios from 'axios';
 import { v4 as uuid } from 'uuid';
+import { UpdatePdfDto } from './dto/update-pdf.dto';
 
 @Injectable()
 export class PdfService {
@@ -330,5 +331,115 @@ async deletePdfFile(pdfId: string, req: AuthRequest) {
   };
 }
 
+
+
+
+async getPdfById(pdfId: string,req:AuthRequest) {
+ if (req.user.role !== 'ADMIN') {
+    throw new BadRequestException('Unauthorized access');
+  }
+
+  const pdf = await this.prisma.pDF.findUnique({
+    where: { id: pdfId },
+    include: {
+      uploadedBy: {
+        select: {
+          id: true,
+          email: true,
+          role: true,
+        },
+      },
+      downloads: true,
+    },
+  });
+
+  if (!pdf) {
+    throw new NotFoundException('PDF not found');
+  }
+
+  // Get Backblaze file info
+  const b2FileInfo = await this.getB2FileInfo(pdf.fileKey);
+
+  return {
+    ...pdf,
+    storageInfo: b2FileInfo,
+  };
+}
+
+
+async updatePdfById(
+  pdfId: string,
+  req: AuthRequest,
+  updatePdfDto: UpdatePdfDto
+) {
+  if (req.user.role !== 'ADMIN') {
+    throw new BadRequestException('Unauthorized access');
+  }
+
+  const pdf = await this.getpdf("id", pdfId);
+  if (!pdf) {
+    throw new NotFoundException('PDF not found');
+  }
+
+  const updatedPdf = await this.prisma.pDF.update({
+    where: { id: pdfId },
+    data: {
+      ...updatePdfDto,
+    },
+    include: {
+      uploadedBy: true, // Optional: return updated uploader info too
+    },
+  });
+
+  return updatedPdf;
+}
+
+
+
+private async getB2FileInfo(fileKey: string) {
+  try {
+    await this.b2.authorize();
+
+    // Step 1: List files and find matching one
+    const listResponse = await this.b2.listFileNames({
+      bucketId: this.configService.get<string>("B2_BUCKET_ID")!,
+      prefix: fileKey,
+      maxFileCount: 1,
+    });
+
+    const matchedFile = listResponse.data.files.find(
+      (file: any) => file.fileName === fileKey
+    );
+
+    if (!matchedFile) {
+      throw new Error(`File with key "${fileKey}" not found in B2 bucket`);
+    }
+
+    const {
+      fileName,
+      fileId,
+      contentLength,
+      contentType,
+      uploadTimestamp,
+    } = matchedFile;
+
+    return {
+      fileId,
+      fileName,
+      sizeInBytes: Number(contentLength),
+      contentType,
+      uploadDate: new Date(Number(uploadTimestamp)),
+    };
+  } catch (error) {
+    console.error('Failed to get file info from B2:', error?.response?.data || error.message);
+    throw new BadRequestException('Could not fetch file information from storage.');
+  }
+}
+
+
+private async getpdf(by: "id" | "title" | "courseCode" | "level", value: string) {
+  const whereClause = { [by]: value };
+  return this.prisma.pDF.findFirst({ where: whereClause });
+}
   
 }
