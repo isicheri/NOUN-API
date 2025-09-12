@@ -20,6 +20,9 @@ model User {
   orders     Order[]
   uploads    PDF[]      @relation("UploadedBy")
   profile    Profile?   @relation("userProfile")
+  courseSummaryRequest CourseSummaryRequest[]
+  notification Notification[]
+  payment Payment[]
 }
 
 model Profile {
@@ -58,6 +61,8 @@ model Order {
   total     Float
   user      User        @relation(fields: [userId], references: [id])
   items     OrderItem[]
+  paymentId String?      @unique
+  payment   Payment?     @relation("OrderPayment", fields: [paymentId], references: [id])
 }
 
 model OrderItem {
@@ -157,4 +162,81 @@ enum NewsCategory {
   NEWSUPDATE
   GUIDES
   SCHOLARSHIP
+}
+
+model CourseSummaryRequest {
+  id            String        @id @default(uuid())
+  userId        String?       // Optional for guests
+  user          User?         @relation(fields: [userId], references: [id])
+  degreeLevel   String
+  courseCount   Int
+  courseCodes   String[]      // E.g. ["GST101", "BIO301"]
+  email         String
+  whatsapp      String
+  status        RequestStatus @default(PENDING)
+  totalPrice    Float
+  paymentId     String?       @unique
+  payment       Payment?      @relation("RequestPayment")
+  paid          Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum RequestStatus {
+  PENDING
+  PAID
+  CANCELLED
+  IN_PROGRESS
+  COMPLETED
+}
+
+
+model Notification {
+  id          String   @id @default(uuid())
+  title       String
+  body        String?
+  type        NotificationType @default(SYSTEM)
+  isRead      Boolean  @default(false)
+  recipientId String?
+  recipient   User?    @relation(fields: [recipientId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+enum NotificationType {
+  SYSTEM      // Admin-wide or system message
+  ORDER       // Order update
+  REQUEST     // Custom request updates
+  MESSAGE     // Chat or communication
+  GENERAL     // Other types
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  amount      Float
+  currency    String        @default("NGN")
+  status      PaymentStatus @default(PENDING)
+  reference   String        @unique
+  gateway     String        @default("paystack")
+
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+
+  orderId     String?       @unique
+  order       Order?        @relation("OrderPayment")
+
+   requestId   String?       @unique
+   request     CourseSummaryRequest? @relation("RequestPayment", fields: [requestId], references: [id])
+
+
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
 }

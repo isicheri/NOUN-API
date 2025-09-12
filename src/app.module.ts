@@ -13,9 +13,12 @@ import { PdfModule } from './modules/pdf/pdf.module';
 import { PrismaHealthMiddleware } from './prisma/middleware/prismaHealth.middleware';
 import { AppController } from './app.controller';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-guard.guard';
+import { CourseSummaryModule } from './modules/CourseSummaryRequest/CourseSummary.module';
+import { NotificationModule } from './modules/Notifications/Notification.module';
+import { PaymentModule } from './modules/payment/Payment.module';
 
 @Module({
-  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule],
+  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule],
   controllers: [AppController],
   providers: [PrismaService,
       {
