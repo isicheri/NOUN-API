@@ -17,12 +17,13 @@ async sendMail({to,from}: Partial<EmailMessageBody>,body: string,subject:string)
         subject: subject,
         html: body,
     })
-  if(mail.error) {
-    return {
-        message: mail.error.message,
-        success: false
-    }
-  }
+  if (mail.error) {
+  console.error("📨 Email send failed:", mail.error); // 👈 Add this
+  return {
+    message: mail.error?.message || "Unknown error",
+    success: false,
+  };
+}
 
   return {
     message: `Email succesfully sent to ${to}.`,

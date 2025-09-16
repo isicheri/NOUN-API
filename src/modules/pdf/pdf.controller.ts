@@ -10,6 +10,7 @@ import { CreatePdfDto } from './dto/create-pdf.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UpdatePdfDto } from './dto/update-pdf.dto';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('pdfs')
 export class PdfController {
@@ -113,5 +114,10 @@ return await this.pdfService.updatePdfById(id,request,body);
 }
 
 
+@Get("/trending")
+@Public()
+async getTrendingPdf() {
+  return await this.pdfService.getTrendingByDownload(3);
+}
 
 }

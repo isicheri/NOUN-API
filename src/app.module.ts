@@ -16,9 +16,11 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-guard.guard';
 import { CourseSummaryModule } from './modules/CourseSummaryRequest/CourseSummary.module';
 import { NotificationModule } from './modules/Notifications/Notification.module';
 import { PaymentModule } from './modules/payment/Payment.module';
+import { CartModule } from './modules/Cart/Cart.module';
+import { QuotesModule } from './modules/Quotes/Quotes.module';
 
 @Module({
-  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule],
+  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule,CartModule,QuotesModule],
   controllers: [AppController],
   providers: [PrismaService,
       {

@@ -158,7 +158,7 @@ export class PdfService {
     return {...mail,signedUrl: signedUrl};    
   }
 
-  private async getSignedUrl(fileKey: string): Promise<string> {
+ async getSignedUrl(fileKey: string): Promise<string> {
   // Authorize
   await this.b2.authorize();
   // Generate signed URL (valid for e.g. 15 minutes = 900s)
@@ -239,7 +239,7 @@ for (let i = 0; i < files.length; i++) {
     throw new BadRequestException(`${file.originalname} is not a valid PDF`);
   }
 
-  const fileKey = `${uuid()}-${file.originalname}`;
+  const fileKey = `course-materials/${uuid()}-${file.originalname}`;
 
   try {
     await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
@@ -350,6 +350,8 @@ async getPdfById(pdfId: string,req:AuthRequest) {
         },
       },
       downloads: true,
+      cartItems: true,
+      orderItems: true
     },
   });
 
@@ -393,6 +395,33 @@ async updatePdfById(
 
   return updatedPdf;
 }
+
+
+
+// ...existing code...
+async getTrendingByDownload(threshold: number) {
+  const trendingPDFs = await this.prisma.pDF.findMany({
+    where: {
+      downloads: {
+        some: {}, // at least one download
+      },
+    },
+    include: {
+      _count: {
+        select: { downloads: true },
+      },
+    },
+    orderBy: {
+      downloads: {
+        _count: 'desc',
+      },
+    },
+  });
+
+  // Filter by threshold in JS, since Prisma doesn't support having on relations
+  return trendingPDFs.filter(pdf => pdf._count.downloads >= threshold);
+}
+
 
 
 
@@ -441,5 +470,7 @@ private async getpdf(by: "id" | "title" | "courseCode" | "level", value: string)
   const whereClause = { [by]: value };
   return this.prisma.pDF.findFirst({ where: whereClause });
 }
+
+
   
 }
