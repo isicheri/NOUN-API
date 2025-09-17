@@ -7,6 +7,7 @@ import { AuthUser } from "../auth/types/auth-types";
 import { v4 as uuidv4 } from "uuid";
 import { PaymentStatus } from "@prisma/client"
 import { ConfigService } from "@nestjs/config";
+import { GetCourseSummaryRequestDto } from "./dto/get-course-summary-request.dto";
 
 
 @Injectable()
@@ -72,8 +73,6 @@ async createRequest(dto: CreateCourseSummaryRequestDto, user: AuthUser) {
   });
 }
 
- 
-
 async markAsPaid(requestId: string) {
   return this.prisma.courseSummaryRequest.update({
     where: { id: requestId },
@@ -83,5 +82,52 @@ async markAsPaid(requestId: string) {
     },
   });
 }
+
+async getCourseSummaryRequests(query: GetCourseSummaryRequestDto) {
+  const { page = 1, limit = 10, status, search, paid } = query;
+
+  const where: any = {};
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (typeof paid === 'boolean') {
+    where.paid = paid;
+  }
+
+  if (search) {
+    where.OR = [
+      { email: { contains: search, mode: 'insensitive' } },
+      {
+        user: {
+          is: {
+            email: { contains: search, mode: 'insensitive' },
+          },
+        },
+      },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    this.prisma.courseSummaryRequest.findMany({
+      where,
+      include: { user: true },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    this.prisma.courseSummaryRequest.count({ where }),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+  };
+}
+
+
 
 }

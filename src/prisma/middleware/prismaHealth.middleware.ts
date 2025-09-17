@@ -19,6 +19,7 @@ export class PrismaHealthMiddleware implements NestMiddleware {
     if (!this.isConnected) {
       return res.status(503).json({
         message: 'Our Service Is currently unavailable',
+        
       });
     }
 

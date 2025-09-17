@@ -18,9 +18,17 @@ import { NotificationModule } from './modules/Notifications/Notification.module'
 import { PaymentModule } from './modules/payment/Payment.module';
 import { CartModule } from './modules/Cart/Cart.module';
 import { QuotesModule } from './modules/Quotes/Quotes.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
-  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule,CartModule,QuotesModule],
+  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule,CartModule,QuotesModule,ThrottlerModule.forRoot({
+    throttlers: [
+      {
+        ttl: 60000 * 2,
+        limit: 10
+      }
+    ]
+  })],
   controllers: [AppController],
   providers: [PrismaService,
       {
@@ -30,7 +38,12 @@ import { QuotesModule } from './modules/Quotes/Quotes.module';
 {
   provide: APP_GUARD,
   useClass: RolesGuard
-},PrismaHealthMiddleware],
+},
+// {
+//   provide: APP_GUARD,
+//   useClass: ThrottlerGuard
+// }
+PrismaHealthMiddleware],
 })
 export class AppModule implements NestModule {
    constructor(private readonly prismaHealthMiddleware: PrismaHealthMiddleware) {}

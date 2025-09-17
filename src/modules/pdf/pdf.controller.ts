@@ -110,6 +110,7 @@ async updatePdfById(
   @Req() request: AuthRequest,
   @Body() body: UpdatePdfDto
 ) {
+  console.log(body)
 return await this.pdfService.updatePdfById(id,request,body);
 }
 
