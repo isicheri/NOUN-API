@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsInt, Min, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class GetCourseSummaryRequestDto {
   @IsOptional()
@@ -23,7 +23,7 @@ export class GetCourseSummaryRequestDto {
   limit?: number = 10;
 
   @IsOptional()
-  @Type(() => Boolean)
   @IsBoolean()
+  @Transform(({ value }) => value === 'true')
   paid?: boolean;
 }

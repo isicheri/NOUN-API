@@ -19,6 +19,7 @@ import { PaymentModule } from './modules/payment/Payment.module';
 import { CartModule } from './modules/Cart/Cart.module';
 import { QuotesModule } from './modules/Quotes/Quotes.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { OrdersModule } from './modules/orders/Orders.module';
 
 @Module({
   imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule,CartModule,QuotesModule,ThrottlerModule.forRoot({
@@ -28,7 +29,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
         limit: 10
       }
     ]
-  })],
+  }),OrdersModule],
   controllers: [AppController],
   providers: [PrismaService,
       {

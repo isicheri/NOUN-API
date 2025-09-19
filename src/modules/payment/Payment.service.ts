@@ -5,93 +5,13 @@ import { Order, PaymentStatus, RequestStatus } from "@prisma/client";
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from "src/utilities/email/email.service";
 import { PdfService } from "../pdf/pdf.service";
-
-
+import { GetPaymentsDto } from "./dto/get-payment.dto";
 
 
 @Injectable()
 export class PaymentService {
  constructor(private prisma: PrismaService,private configService:ConfigService,private emailService:EmailService,private pdfService:PdfService) {}
 
-//   async handlePaystackWebhook(headers: any, bodyOrRawBody: any, isRaw = false) {
-// //   console.log("=== Webhook received ===");
-// //   console.log("Headers:", headers);
-
-//   const signature = headers['x-paystack-signature'] || headers['X-Paystack-Signature'];
-// //   console.log("Signature from header:", signature);
-
-//   const secret = this.configService.get<string>("PAYSTACK_SECRET_KEY");
-// //   console.log("Using secret key:", secret ? "DEFINED" : "UNDEFINED");
-
-//   if (!secret) {
-//     // console.error("❌ PAYSTACK_SECRET_KEY is not defined");
-//     throw new BadRequestException("PAYSTACK_SECRET_KEY is not defined");
-//   }
-
-//   let dataToHash = bodyOrRawBody;
-
-//   if (!isRaw) {
-//     // If you receive parsed JSON, stringify it for hashing (but this is not ideal!)
-//     dataToHash = JSON.stringify(bodyOrRawBody);
-//   }
-
-// //   console.log("Data used for hash:", dataToHash);
-
-//   const hash = crypto.createHmac("sha512", secret).update(dataToHash).digest("hex");
-// //   console.log("Computed hash:", hash);
-
-//   if (hash !== signature) {
-//     // console.error("❌ Invalid signature! Hash does not match header signature.");
-//     throw new BadRequestException("Invalid signature");
-//   }
-// //   console.log("✅ Signature valid");
-
-//   // If body is raw string, parse it here
-//   const body = isRaw ? JSON.parse(bodyOrRawBody) : bodyOrRawBody;
-
-// //   console.log("Event received:", body.event);
-
-//   if (body.event === "charge.success") {
-//     const reference = body.data.reference;
-//     // console.log("Payment reference:", reference);
-
-//     const payment = await this.prisma.payment.findUnique({ where: { reference } });
-
-//     if (!payment) throw new BadRequestException("Payment record not found");
-//     //   console.error("❌ Payment record not found for reference:", reference);
-    
-
-//     if (payment.status === "SUCCESS") return { ok: true };
-//     //   console.log("Payment already marked SUCCESS. Skipping update.");
-  
-//  await this.prisma.$transaction(async (tx) => {
-//     await tx.payment.update({
-//       where: { reference },
-//       data: { status: PaymentStatus.SUCCESS, paidAt: new Date() },
-//     });
-
-//     if (payment.orderId) {
-//       await tx.order.update({
-//         where: { id: payment.orderId },
-//         data: { status: "PAID", paymentId: payment.id },
-//       });
-
-//       await tx.cartItem.deleteMany({
-//         where: { cart: { userId: payment.userId! } },
-//       });
-//     }
-
-//     if (payment.requestId) {
-//       await tx.courseSummaryRequest.update({
-//         where: { id: payment.requestId },
-//         data: { status: RequestStatus.PAID, paid: true, paymentId: payment.id },
-//       });
-//     }
-//   });
-
-//   return { ok: true };
-// }
-//   }
 async handlePaystackWebhook(headers: any, bodyOrRawBody: any, isRaw = false) {
   const signature = headers['x-paystack-signature'] || headers['X-Paystack-Signature'];
   const secret = this.configService.get<string>("PAYSTACK_SECRET_KEY");
@@ -216,7 +136,48 @@ if (!emailResult.success) {
   return { ok: true };
 }
 
+async fetchPayments(query: GetPaymentsDto) {
+  const { page = 1, limit = 10, search, status, gateway } = query;
 
+  const where: any = {};
 
+  if (status) where.status = status;
+  if (gateway) where.gateway = gateway;
+
+  if (search) {
+    where.OR = [
+      { reference: { contains: search, mode: 'insensitive' } },
+      {
+        user: {
+          is: {
+            email: { contains: search, mode: 'insensitive' },
+          },
+        },
+      },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    this.prisma.payment.findMany({
+      where,
+      include: {
+        user: true,
+        request: true,
+        order: true
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    this.prisma.payment.count({ where }),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+  };
+}
 
 }

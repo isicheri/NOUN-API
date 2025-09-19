@@ -1,9 +1,9 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateCourseSummaryRequestDto } from "./dto/types";
 import { RequestStatus } from "@prisma/client";
 import { NotificationService } from "../Notifications/Notification.service";
-import { AuthUser } from "../auth/types/auth-types";
+import { AuthRequest, AuthUser } from "../auth/types/auth-types";
 import { v4 as uuidv4 } from "uuid";
 import { PaymentStatus } from "@prisma/client"
 import { ConfigService } from "@nestjs/config";
@@ -92,9 +92,9 @@ async getCourseSummaryRequests(query: GetCourseSummaryRequestDto) {
     where.status = status;
   }
 
-  if (typeof paid === 'boolean') {
-    where.paid = paid;
-  }
+if (typeof paid === 'boolean') {
+  where.paid = paid;
+}
 
   if (search) {
     where.OR = [
@@ -128,6 +128,32 @@ async getCourseSummaryRequests(query: GetCourseSummaryRequestDto) {
   };
 }
 
+
+async viewCourseRequestInfo(requestId: string) {
+  let request = await this.prisma.courseSummaryRequest.findFirst({where: {id: requestId}});
+
+  if(!request) throw new BadRequestException("Course Summary Request Not found!");
+    return request;
+}
+
+async deleteCourseRequest(requestId: string,req:AuthRequest) {
+  if (req.user.role !== 'ADMIN') {
+    throw new BadRequestException('Unauthorized access');
+  }
+ let request = await this.prisma.courseSummaryRequest.findFirst({where: {id: requestId}});
+  if(!request) throw new BadRequestException("Course Summary Request Not found!");
+  await this.prisma.courseSummaryRequest.delete({where: {id: requestId}});
+  return { message: "Course Summary Request Deleted Successfully" }
+}
+
+async updateCourseRequestStatus(requestId: string, status:RequestStatus) {
+   let request = await this.prisma.courseSummaryRequest.findFirst({where: {id: requestId}});
+   if(!request) throw new BadRequestException("Course Summary Request Not found!");
+   await this.prisma.courseSummaryRequest.update({where: {id: requestId},data: {
+    status
+   }})
+   return {message: "Successfully Updated Status Of Request"};
+}
 
 
 }
