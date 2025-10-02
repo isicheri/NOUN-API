@@ -1,57 +1,60 @@
-  import { BadRequestException, Injectable,UnauthorizedException } from "@nestjs/common";
-  import { PrismaService } from "src/prisma/prisma.service";
-  import { JwtService } from "@nestjs/jwt";
-  import * as bcrypt from "bcrypt";
-  import { AuthDto, CreateUserDto } from "./dto/auth-dto";
-import { EmailService } from "src/utilities/email/email.service";
-import { EmailMessageBody } from "src/utilities/email/types/email.interface";
-import { ConfigService } from "@nestjs/config";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { AuthDto, CreateUserDto } from './dto/auth-dto';
+import { EmailService } from 'src/utilities/email/email.service';
+import { ConfigService } from '@nestjs/config';
+import { AuthUser } from './types/auth-types';
+import { JwtPayload } from './types/jwt-payload.type';
 
-
-  @Injectable() 
-  export class AuthService {
-      constructor(
-      private prisma: PrismaService,
-      private jwtService: JwtService,
-      private emailService: EmailService,
-      private configService: ConfigService
-    ) {}
+@Injectable()
+export class AuthService {
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private emailService: EmailService,
+    private configService: ConfigService,
+  ) {}
 
   // validate for LocalStrategy
-    async validateUser(email: string,
-      pass: string) {
-       const user = await this.prisma.user.findUnique({ where: { email } });
-  if (!user || !user.password) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
-
-  const isMatch = await bcrypt.compare(pass, user.password);
-  if (!isMatch) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
-
-  const { password, ...result } = user;
-  return result;
+  async validateUser(userEmail: string, pass: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: userEmail },
+    });
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-
-  async signup({fullName,email,password}:CreateUserDto) {
-      const user = await this.prisma.user.findUnique({ where: { email } });
-      if(user) {
-          throw new BadRequestException("User Already Exists");
-      }
-      const hashed = await bcrypt.hash(password, 10);
-      return this.prisma.user.create({
-          data: {
-            email,
-            password: hashed,
-            profile: {
-              create: {name: fullName}
-            }
-          }
-      })
+    const isMatch = await bcrypt.compare(pass, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
+    const { id, providerId, role, createdAt, provider, email } = user;
+    return { id, providerId, role, createdAt, provider, email };
+  }
+
+  async signup({ fullName, email, password }: CreateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user) {
+      throw new BadRequestException('User Already Exists');
+    }
+    const hashed = await bcrypt.hash(password, 10);
+    return this.prisma.user.create({
+      data: {
+        email,
+        password: hashed,
+        profile: {
+          create: { name: fullName },
+        },
+      },
+    });
+  }
 
   async validateGoogleUser(providerId: string, email: string, name: string) {
     let user = await this.prisma.user.findUnique({ where: { email } });
@@ -66,44 +69,54 @@ import { ConfigService } from "@nestjs/config";
             create: { name },
           },
           // optionally store googleId in a new column for future use
-          providerId
+          providerId,
         },
       });
     }
 
     // Generate JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { userId: user.id, email: user.email, role: user.role };
     const token = this.jwtService.sign(payload);
 
     return { user, accessToken: token };
   }
 
-
-      async login(user: any) {
-        const payload = { sub: user.id, email: user.email, role: user.role };
-        const validUser = await this.prisma.user.findUnique({where: {id: user.id},include: {profile: true}});
-        return {
-          access_token: this.jwtService.sign(payload),
-          role: user.role, 
-          user: {id: user.id,email: user.email,profile: { name: validUser?.profile?.name,imageUrl: null }}
-          };
-      }
-
-async RequestResetPassword({ email }: Partial<AuthDto>,from:string) {
-  if (!email) {
-    throw new BadRequestException("Email is required.");
+  async login(user: AuthUser) {
+    const validUser = await this.prisma.user.findUnique({
+      where: user.userId ? { id: user.userId } : { email: user.email },
+      include: { profile: true },
+    });
+    const payload = {
+      userId: validUser?.id,
+      email: user.email,
+      role: user.role,
+    };
+    return {
+      access_token: this.jwtService.sign(payload),
+      role: user.role,
+      user: {
+        id: user.userId,
+        email: user.email,
+        profile: { name: validUser?.profile?.name, imageUrl: null },
+      },
+    };
   }
-  const user = await this.prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return {message: "Email not found!", success: false}; 
-  }
-  const token = await this.jwtService.sign({ email }, { expiresIn: '15m' });
 
-  // 4. Create a reset link (replace with your actual front-end URL)
-  const resetLink = `${this.configService.get<string>('FRONTEND_MAIN_URL')}/auth/reset_password?token=${token}`;
+  async RequestResetPassword({ email }: Partial<AuthDto>, from: string) {
+    if (!email) {
+      throw new BadRequestException('Email is required.');
+    }
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return { message: 'Email not found!', success: false };
+    }
+    const token = this.jwtService.sign({ email }, { expiresIn: '15m' });
 
-  // 5. Build the email content
-const htmlContent = `
+    // 4. Create a reset link (replace with your actual front-end URL)
+    const resetLink = `${this.configService.get<string>('FRONTEND_MAIN_URL')}/auth/reset_password?token=${token}`;
+
+    // 5. Build the email content
+    const htmlContent = `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
     <!-- Logo -->
     <div style="text-align: center; margin-bottom: 20px;">
@@ -161,50 +174,55 @@ const htmlContent = `
   </div>
 `;
 
-  // 6. Send the email
-  const mailResponse = await this.emailService.sendMail({to: email,from:from || "no-reply@nounedu.net"}, htmlContent,"Password Reset Request");
+    // 6. Send the email
+    const mailResponse = await this.emailService.sendMail(
+      { to: email, from: from || 'no-reply@nounedu.net' },
+      htmlContent,
+      'Password Reset Request',
+    );
 
-  return {...mailResponse};
+    return { ...mailResponse };
+  }
+
+  async ResetPassword(jwtToken: string, { password }: Partial<AuthDto>) {
+    if (!jwtToken) {
+      throw new UnauthorizedException('Missing or invalid reset token.');
+    }
+
+    if (!password || password.length < 6) {
+      throw new BadRequestException(
+        'Password must be at least 6 characters long.',
+      );
+    }
+
+    let decoded: Pick<JwtPayload, 'email'>;
+    try {
+      decoded = this.jwtService.verify(jwtToken); // throws error if expired or invalid
+    } catch (error) {
+      console.log('Reset password error: ', error);
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
+
+    const email = decoded?.email;
+    if (!email) {
+      throw new UnauthorizedException('Invalid token payload.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await this.prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      success: true,
+      message: 'Password has been reset successfully.',
+    };
+  }
 }
-
-async ResetPassword(jwtToken: string, { password }: Partial<AuthDto>) {
-  if (!jwtToken) {
-    throw new UnauthorizedException("Missing or invalid reset token.");
-  }
-
-  if (!password || password.length < 6) {
-    throw new BadRequestException("Password must be at least 6 characters long.");
-  }
-
-  let decoded;
-  try {
-    decoded = this.jwtService.verify(jwtToken); // throws error if expired or invalid
-  } catch (error) {
-    throw new UnauthorizedException("Invalid or expired token.");
-  }
-
-  const email = decoded?.email;
-  if (!email) {
-    throw new UnauthorizedException("Invalid token payload.");
-  }
-
-  const user = await this.prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    throw new BadRequestException("User not found.");
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  await this.prisma.user.update({
-    where: { email },
-    data: { password: hashedPassword },
-  });
-
-  return {
-    success: true,
-    message: "Password has been reset successfully.",
-  };
-}
-
-
-  }

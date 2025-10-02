@@ -1,5 +1,10 @@
 // src/auth/guards/jwt-auth.guard.ts
-import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import {
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
@@ -23,12 +28,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err:any, user:any, info:any, context: ExecutionContext) {
+  handleRequest(
+    err: unknown,
+    user: any,
+    info: unknown,
+    context: ExecutionContext,
+  ) {
     const request = context.switchToHttp().getRequest<Request>();
     if (err || !user) {
       throw new UnauthorizedException('Invalid or missing JWT token');
     }
-
     request.user = user;
     return user;
   }

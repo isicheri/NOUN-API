@@ -22,33 +22,52 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { OrdersModule } from './modules/orders/Orders.module';
 
 @Module({
-  imports: [SupabaseModule, ConfigModule.register({folder: "."}), PrismaModule,AcademiceventModule,AuthModule,UserModule,EmailModule,PdfModule,CourseSummaryModule,NotificationModule,PaymentModule,CartModule,QuotesModule,ThrottlerModule.forRoot({
-    throttlers: [
-      {
-        ttl: 60000 * 2,
-        limit: 10
-      }
-    ]
-  }),OrdersModule],
+  imports: [
+    SupabaseModule,
+    ConfigModule.register({ folder: '.' }),
+    PrismaModule,
+    AcademiceventModule,
+    AuthModule,
+    UserModule,
+    EmailModule,
+    PdfModule,
+    CourseSummaryModule,
+    NotificationModule,
+    PaymentModule,
+    CartModule,
+    QuotesModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000 * 2,
+          limit: 10,
+        },
+      ],
+    }),
+    OrdersModule,
+  ],
   controllers: [AppController],
-  providers: [PrismaService,
-      {
+  providers: [
+    PrismaService,
+    {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // ✅ Must come first
     },
-{
-  provide: APP_GUARD,
-  useClass: RolesGuard
-},
-// {
-//   provide: APP_GUARD,
-//   useClass: ThrottlerGuard
-// }
-PrismaHealthMiddleware],
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard
+    // }
+    PrismaHealthMiddleware,
+  ],
 })
 export class AppModule implements NestModule {
-   constructor(private readonly prismaHealthMiddleware: PrismaHealthMiddleware) {}
-
+  constructor(
+    private readonly prismaHealthMiddleware: PrismaHealthMiddleware,
+  ) {}
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(PrismaHealthMiddleware).forRoutes('*');
   }

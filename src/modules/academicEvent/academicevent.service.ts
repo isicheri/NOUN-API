@@ -3,16 +3,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AcademiceventService {
+  constructor(private readonly prismaClient: PrismaService) {}
 
-    constructor(
-        private readonly prismaClient: PrismaService
-    ) {}
-
-async getCurrentEvents() {
-  return this.prismaClient.academicEvent.findMany({
-    orderBy: { target: "asc" }, // soonest event first
-  });
-}
-
-
+  async getCurrentEvents() {
+    return this.prismaClient.academicEvent.findMany({
+      orderBy: { target: 'asc' }, // soonest event first
+    });
+  }
 }

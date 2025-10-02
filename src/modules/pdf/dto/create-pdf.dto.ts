@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+} from 'class-validator';
 import { PdfCategory } from '@prisma/client';
 
 export class CreatePdfDto {
@@ -14,7 +20,6 @@ export class CreatePdfDto {
   @IsString()
   level: string;
 
-  
   @IsEnum(PdfCategory)
   category: PdfCategory;
 

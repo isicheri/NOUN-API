@@ -1,35 +1,37 @@
-import { PdfCategory } from "@prisma/client";
-import { Type } from "class-transformer";
-import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
-
-
+import { PdfCategory } from '@prisma/client';
+import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdatePdfDto {
-
-    @IsString()
-    @IsOptional()
+  @IsString()
+  @IsOptional()
   title?: string;
 
   @IsString()
-    @IsOptional()
-  description?: string; 
+  @IsOptional()
+  description?: string;
 
-   @IsNumber()
-    @IsOptional()
-     @Type(() => Number) 
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
   price?: number;
 
-   @IsBoolean()
-    @IsOptional()
-     @Type(() => Boolean) 
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
   isFree?: boolean;
 
   @IsOptional()
-    @IsEnum(PdfCategory)
+  @IsEnum(PdfCategory)
   category?: PdfCategory;
-  
 
   @IsOptional()
-@IsString()
+  @IsString()
   level?: string;
 }

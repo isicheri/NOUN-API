@@ -1,18 +1,13 @@
-import { IsEmail, isString, IsString } from "class-validator";
-
-
-
+import { IsEmail, IsString } from 'class-validator';
 export class EmailMessageBody {
+  @IsEmail()
+  @IsEmail()
+  from: string;
 
-    @IsEmail()
-    @IsEmail()
-    from: string;
+  @IsEmail()
+  @IsString()
+  to: string;
 
-    @IsEmail()
-    @IsString()
-    to: string;
-
-    @IsString()
-    messsage: string;
-
+  @IsString()
+  messsage: string;
 }

@@ -10,16 +10,14 @@ export class AuthDto {
 }
 
 export class CreateUserDto {
+  @IsString()
+  @IsNotEmpty()
+  fullName: string;
 
-    @IsString()
-    @IsNotEmpty()
-    fullName: string
+  @IsEmail()
+  email: string;
 
-    @IsEmail()
-     email: string;
-
-    @IsNotEmpty()
-    @MinLength(6, { message: 'Password must be at least 6 characters long' })
-    password: string;
-
+  @IsNotEmpty()
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  password: string;
 }

@@ -1,8 +1,19 @@
 // pdf.service.ts
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PDF, PdfCategory } from '@prisma/client';
-const B2 = require("backblaze-b2");  
+const B2 = require('backblaze-b2');
 import { ConfigService } from '@nestjs/config';
 import { AuthRequest } from '../auth/types/auth-types';
 import { EmailService } from 'src/utilities/email/email.service';
@@ -13,12 +24,16 @@ import { UpdatePdfDto } from './dto/update-pdf.dto';
 
 @Injectable()
 export class PdfService {
-  private b2:any;
-  constructor(private prisma: PrismaService,private configService: ConfigService,private emailService:EmailService) {
+  private b2: any;
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+    private emailService: EmailService,
+  ) {
     this.b2 = new B2({
-      applicationKey: this.configService.get<string>("APPLICATION_KEY")!,
-      applicationKeyId: this.configService.get<string>("APPLICATION_KEY_ID")!
-    })
+      applicationKey: this.configService.get<string>('APPLICATION_KEY')!,
+      applicationKeyId: this.configService.get<string>('APPLICATION_KEY_ID')!,
+    });
   }
   async getPdfs({
     category,
@@ -66,36 +81,35 @@ export class PdfService {
         totalPages: Math.ceil(total / limit),
       },
     };
-  };
+  }
 
-
-  async downloadpdf(pdfId: string,req:AuthRequest) {
-      const pdf = await this.prisma.pDF.findUnique({where: {id: pdfId}});
-      if(!pdf) {
-        throw new NotFoundException("Pdf not found!");
-      }
+  async downloadpdf(pdfId: string, req: AuthRequest) {
+    const pdf = await this.prisma.pDF.findUnique({ where: { id: pdfId } });
+    if (!pdf) {
+      throw new NotFoundException('Pdf not found!');
+    }
     if (!req.user?.userId) {
-    throw new BadRequestException('Cannot continue with this request');
-  }
+      throw new BadRequestException('Cannot continue with this request');
+    }
 
-  // 3. Optional: Prevent duplicate downloads
-  // Consider using connectOrCreate or a composite unique constraint
-  try {
-    await this.prisma.download.create({
-      data: {
-        userId: req.user.userId,
-        pdfId: pdf.id,
-      },
-    });
-  } catch (err) {
-   return {message: "Something went wrong!",success: false}
-  }
+    // 3. Optional: Prevent duplicate downloads
+    // Consider using connectOrCreate or a composite unique constraint
+    try {
+      await this.prisma.download.create({
+        data: {
+          userId: req.user.userId,
+          pdfId: pdf.id,
+        },
+      });
+    } catch (err) {
+      return { message: 'Something went wrong!', success: false };
+    }
 
-       let signedUrl = await this.getSignedUrl(pdf.fileKey);
-       if(!signedUrl) {
-        throw new BadRequestException("Something went wrong!");
-       }
-       const htmlContent = `
+    const signedUrl = await this.getSignedUrl(pdf.fileKey);
+    if (!signedUrl) {
+      throw new BadRequestException('Something went wrong!');
+    }
+    const htmlContent = `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
     <!-- Logo -->
     <div style="text-align: center; margin-bottom: 20px;">
@@ -126,7 +140,7 @@ export class PdfService {
     <h2 style="color: #2F4F2F;">Your PDF Download is Ready!</h2>
 
     <p style="font-size: 16px; color: #333;">
-      Hello ${req.user.email.split("@")[0] || ''},
+      Hello ${req.user.email.split('@')[0] || ''},
     </p>
     <p style="font-size: 16px; color: #333;">
       Thank you for using Nounedu. Your requested PDF <strong>"${pdf.title}"</strong> is now ready to download.
@@ -154,66 +168,69 @@ export class PdfService {
   </div>
 `;
 
-    let mail = await this.emailService.sendMail({to: req.user.email,from: "info@nounedu.net"},htmlContent,"Requesting Pdf Download");
-    return {...mail,signedUrl: signedUrl};    
+    const mail = await this.emailService.sendMail(
+      { to: req.user.email, from: 'info@nounedu.net' },
+      htmlContent,
+      'Requesting Pdf Download',
+    );
+    return { ...mail, signedUrl: signedUrl };
   }
 
- async getSignedUrl(fileKey: string): Promise<string> {
-  // Authorize
-  await this.b2.authorize();
-  // Generate signed URL (valid for e.g. 15 minutes = 900s)
-  const response = await this.b2.getDownloadAuthorization({
-    bucketId: this.configService.get<string>("B2_BUCKET_ID")!,
-    fileNamePrefix: fileKey, // file path in bucket
-    validDurationInSeconds: 900,
-  });
-  const baseUrl = `https://f005.backblazeb2.com/file/NounEdu-pdfs/${fileKey}`;
-  const signedUrl = `${baseUrl}?Authorization=${response.data.authorizationToken}`;
+  async getSignedUrl(fileKey: string): Promise<string> {
+    // Authorize
+    await this.b2.authorize();
+    // Generate signed URL (valid for e.g. 15 minutes = 900s)
+    const response = await this.b2.getDownloadAuthorization({
+      bucketId: this.configService.get<string>('B2_BUCKET_ID')!,
+      fileNamePrefix: fileKey, // file path in bucket
+      validDurationInSeconds: 900,
+    });
+    const baseUrl = `https://f005.backblazeb2.com/file/NounEdu-pdfs/${fileKey}`;
+    const signedUrl = `${baseUrl}?Authorization=${response.data.authorizationToken}`;
 
-  return signedUrl;
+    return signedUrl;
   }
 
+  // async uploadPdf(file: Express.Multer.File, dto: CreatePdfDto,req:AuthRequest) {
+  //     if (!file) throw new BadRequestException('File is required');// checks if there is not file to upload
+  //     if (file.mimetype !== 'application/pdf')  throw new BadRequestException('Only PDF files are allowed'); //file type validation
+  //     if(req.user.role !== "ADMIN") throw new BadRequestException("cannot perform task");
+  //     const fileKey = `${uuid()}-${file.originalname}`;
+  //     const formData = new FormData();
+  //     formData.append('file', file.buffer, fileKey);
+  //     // Example: Signed upload (assuming you generated an uploadUrl + authToken)
+  //     await this.b2.authorize();
+  //     const uploadAuth = await this.b2.getUploadUrl({ bucketId: this.configService.get<string>("B2_BUCKET_ID")  });
 
-// async uploadPdf(file: Express.Multer.File, dto: CreatePdfDto,req:AuthRequest) {
-//     if (!file) throw new BadRequestException('File is required');// checks if there is not file to upload
-//     if (file.mimetype !== 'application/pdf')  throw new BadRequestException('Only PDF files are allowed'); //file type validation
-//     if(req.user.role !== "ADMIN") throw new BadRequestException("cannot perform task");
-//     const fileKey = `${uuid()}-${file.originalname}`;
-//     const formData = new FormData();
-//     formData.append('file', file.buffer, fileKey);
-//     // Example: Signed upload (assuming you generated an uploadUrl + authToken)
-//     await this.b2.authorize();
-//     const uploadAuth = await this.b2.getUploadUrl({ bucketId: this.configService.get<string>("B2_BUCKET_ID")  });
+  //     try {
+  //   await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
+  //   headers: {
+  //     Authorization: uploadAuth.data.authorizationToken,
+  //     'X-Bz-File-Name': fileKey,
+  //     'Content-Type': file.mimetype,
+  //              },
+  //          });
+  //     } catch (error) {
+  //        console.error("Upload failed", error?.response?.data || error.message);
+  //   throw new BadRequestException("Failed to upload PDF to storage");
+  //     }
 
-//     try {
-//   await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
-//   headers: {
-//     Authorization: uploadAuth.data.authorizationToken,
-//     'X-Bz-File-Name': fileKey,
-//     'Content-Type': file.mimetype,
-//              },
-//          });
-//     } catch (error) {
-//        console.error("Upload failed", error?.response?.data || error.message);
-//   throw new BadRequestException("Failed to upload PDF to storage");
-//     }
+  //     // 🔹 Step 2: Save in DB
+  //     const pdf = await this.prisma.pDF.create({
+  //       data: {
+  //         ...dto,
+  //         fileKey,
+  //         uploadedById: req.user.userId, // dynamically take from request.user.id
+  //       },
+  //     });
 
-//     // 🔹 Step 2: Save in DB
-//     const pdf = await this.prisma.pDF.create({
-//       data: {
-//         ...dto,
-//         fileKey,
-//         uploadedById: req.user.userId, // dynamically take from request.user.id
-//       },
-//     });
-
-//     return pdf;
-//   }
+  //     return pdf;
+  //   }
 
   async uploadMultiplePdfs(
     files: Express.Multer.File[],
-    metadataArray: CreatePdfDto[], 
-    req: AuthRequest
+    metadataArray: CreatePdfDto[],
+    req: AuthRequest,
   ) {
     if (req.user.role !== 'ADMIN') {
       throw new BadRequestException('Unauthorized');
@@ -225,252 +242,243 @@ export class PdfService {
       bucketId: this.configService.get<string>('B2_BUCKET_ID'),
     });
 
-   if (files.length !== metadataArray.length) {
-  throw new BadRequestException('Files and metadata count mismatch');
-}
-
-const savedPdfs: PDF[] = [];
-
-for (let i = 0; i < files.length; i++) {
-  const file = files[i];
-  const dto = metadataArray[i];
-
-  if (file.mimetype !== 'application/pdf') {
-    throw new BadRequestException(`${file.originalname} is not a valid PDF`);
-  }
-
-  const fileKey = `course-materials/${uuid()}-${file.originalname}`;
-
-  try {
-    await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
-      headers: {
-        Authorization: uploadAuth.data.authorizationToken,
-        'X-Bz-File-Name': fileKey,
-        'Content-Type': file.mimetype,
-         'X-Bz-Content-Sha1': 'do_not_verify'
-      },
-    });
-  } catch (error) {
-    console.error('Upload failed:', error?.response?.data || error.message);
-    throw new BadRequestException(
-      `Failed to upload ${file.originalname} to storage`
-    );
-  }
-
-  const saved = await this.prisma.pDF.create({
-    data: {
-      ...dto,
-      fileKey,
-      uploadedById: req.user.userId,
-    },
-  });
-
-  savedPdfs.push(saved);
-}
-
-return savedPdfs;
-  }
-
-
-async deletePdfFile(pdfId: string, req: AuthRequest) {
-  if (req.user.role !== 'ADMIN') {
-    throw new BadRequestException('Unauthorized access');
-  }
-
-  const pdf = await this.prisma.pDF.findUnique({
-    where: { id: pdfId },
-  });
-
-  if (!pdf) {
-    throw new NotFoundException('PDF not found');
-  }
-
-  // 1. Authorize B2
-  await this.b2.authorize();
-
-  // 2. Get file info to get fileId
-  let fileInfo;
-  try {
-    const response = await this.b2.listFileNames({
-      bucketId: this.configService.get<string>('B2_BUCKET_ID'),
-      prefix: pdf.fileKey,
-      maxFileCount: 1,
-    });
-
-    fileInfo = response.data.files.find(
-      (file: any) => file.fileName === pdf.fileKey
-    );
-
-    if (!fileInfo) {
-      throw new NotFoundException('File not found in storage');
+    if (files.length !== metadataArray.length) {
+      throw new BadRequestException('Files and metadata count mismatch');
     }
-  } catch (err) {
-    console.error('Error retrieving file info:', err.message);
-    throw new BadRequestException('Failed to retrieve file from storage');
-  }
 
-  // 3. Delete file from B2
-  try {
-    await this.b2.deleteFileVersion({
-      fileName: fileInfo.fileName,
-      fileId: fileInfo.fileId,
-    });
-  } catch (err) {
-    console.error('Error deleting from B2:', err.message);
-    throw new BadRequestException('Failed to delete file from storage');
-  }
+    const savedPdfs: PDF[] = [];
 
-  // 4. Delete from Prisma DB
-  await this.prisma.pDF.delete({
-    where: { id: pdfId },
-  });
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const dto = metadataArray[i];
 
-  return {
-    success: true,
-    message: 'PDF deleted successfully',
-  };
-}
+      if (file.mimetype !== 'application/pdf') {
+        throw new BadRequestException(
+          `${file.originalname} is not a valid PDF`,
+        );
+      }
 
+      const fileKey = `course-materials/${uuid()}-${file.originalname}`;
 
+      try {
+        await axios.post(uploadAuth.data.uploadUrl, file.buffer, {
+          headers: {
+            Authorization: uploadAuth.data.authorizationToken,
+            'X-Bz-File-Name': fileKey,
+            'Content-Type': file.mimetype,
+            'X-Bz-Content-Sha1': 'do_not_verify',
+          },
+        });
+      } catch (error) {
+        console.error('Upload failed:', error?.response?.data || error.message);
+        throw new BadRequestException(
+          `Failed to upload ${file.originalname} to storage`,
+        );
+      }
 
-
-async getPdfById(pdfId: string,req:AuthRequest) {
- if (req.user.role !== 'ADMIN') {
-    throw new BadRequestException('Unauthorized access');
-  }
-
-  const pdf = await this.prisma.pDF.findUnique({
-    where: { id: pdfId },
-    include: {
-      uploadedBy: {
-        select: {
-          id: true,
-          email: true,
-          role: true,
+      const saved = await this.prisma.pDF.create({
+        data: {
+          ...dto,
+          fileKey,
+          uploadedById: req.user.userId,
         },
-      },
-      downloads: true,
-      cartItems: true,
-      orderItems: true
-    },
-  });
+      });
 
-  if (!pdf) {
-    throw new NotFoundException('PDF not found');
+      savedPdfs.push(saved);
+    }
+
+    return savedPdfs;
   }
 
-  // Get Backblaze file info
-  const b2FileInfo = await this.getB2FileInfo(pdf.fileKey);
+  async deletePdfFile(pdfId: string, req: AuthRequest) {
+    if (req.user.role !== 'ADMIN') {
+      throw new BadRequestException('Unauthorized access');
+    }
 
-  return {
-    ...pdf,
-    storageInfo: b2FileInfo,
-  };
-}
+    const pdf = await this.prisma.pDF.findUnique({
+      where: { id: pdfId },
+    });
 
+    if (!pdf) {
+      throw new NotFoundException('PDF not found');
+    }
 
-async updatePdfById(
-  pdfId: string,
-  req: AuthRequest,
-  updatePdfDto: UpdatePdfDto
-) {
-  if (req.user.role !== 'ADMIN') {
-    throw new BadRequestException('Unauthorized access');
-  }
-
-  const pdf = await this.getpdf("id", pdfId);
-  if (!pdf) {
-    throw new NotFoundException('PDF not found');
-  }
-
-  const updatedPdf = await this.prisma.pDF.update({
-    where: { id: pdfId },
-    data: {
-      ...updatePdfDto,
-    },
-    include: {
-      uploadedBy: true, // Optional: return updated uploader info too
-    },
-  });
-
-  return updatedPdf;
-}
-
-
-
-// ...existing code...
-async getTrendingByDownload(threshold: number) {
-  const trendingPDFs = await this.prisma.pDF.findMany({
-    where: {
-      downloads: {
-        some: {}, // at least one download
-      },
-    },
-    include: {
-      _count: {
-        select: { downloads: true },
-      },
-    },
-    orderBy: {
-      downloads: {
-        _count: 'desc',
-      },
-    },
-  });
-
-  // Filter by threshold in JS, since Prisma doesn't support having on relations
-  return trendingPDFs.filter(pdf => pdf._count.downloads >= threshold);
-}
-
-
-
-
-private async getB2FileInfo(fileKey: string) {
-  try {
+    // 1. Authorize B2
     await this.b2.authorize();
 
-    // Step 1: List files and find matching one
-    const listResponse = await this.b2.listFileNames({
-      bucketId: this.configService.get<string>("B2_BUCKET_ID")!,
-      prefix: fileKey,
-      maxFileCount: 1,
-    });
+    // 2. Get file info to get fileId
+    let fileInfo;
+    try {
+      const response = await this.b2.listFileNames({
+        bucketId: this.configService.get<string>('B2_BUCKET_ID'),
+        prefix: pdf.fileKey,
+        maxFileCount: 1,
+      });
 
-    const matchedFile = listResponse.data.files.find(
-      (file: any) => file.fileName === fileKey
-    );
+      fileInfo = response.data.files.find(
+        (file: any) => file.fileName === pdf.fileKey,
+      );
 
-    if (!matchedFile) {
-      throw new Error(`File with key "${fileKey}" not found in B2 bucket`);
+      if (!fileInfo) {
+        throw new NotFoundException('File not found in storage');
+      }
+    } catch (err) {
+      console.error('Error retrieving file info:', err.message);
+      throw new BadRequestException('Failed to retrieve file from storage');
     }
 
-    const {
-      fileName,
-      fileId,
-      contentLength,
-      contentType,
-      uploadTimestamp,
-    } = matchedFile;
+    // 3. Delete file from B2
+    try {
+      await this.b2.deleteFileVersion({
+        fileName: fileInfo.fileName,
+        fileId: fileInfo.fileId,
+      });
+    } catch (err) {
+      console.error('Error deleting from B2:', err.message);
+      throw new BadRequestException('Failed to delete file from storage');
+    }
+
+    // 4. Delete from Prisma DB
+    await this.prisma.pDF.delete({
+      where: { id: pdfId },
+    });
 
     return {
-      fileId,
-      fileName,
-      sizeInBytes: Number(contentLength),
-      contentType,
-      uploadDate: new Date(Number(uploadTimestamp)),
+      success: true,
+      message: 'PDF deleted successfully',
     };
-  } catch (error) {
-    console.error('Failed to get file info from B2:', error?.response?.data || error.message);
-    throw new BadRequestException('Could not fetch file information from storage.');
   }
-}
 
+  async getPdfById(pdfId: string, req: AuthRequest) {
+    if (req.user.role !== 'ADMIN') {
+      throw new BadRequestException('Unauthorized access');
+    }
 
-private async getpdf(by: "id" | "title" | "courseCode" | "level", value: string) {
-  const whereClause = { [by]: value };
-  return this.prisma.pDF.findFirst({ where: whereClause });
-}
+    const pdf = await this.prisma.pDF.findUnique({
+      where: { id: pdfId },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+        downloads: true,
+        cartItems: true,
+        orderItems: true,
+      },
+    });
 
+    if (!pdf) {
+      throw new NotFoundException('PDF not found');
+    }
 
-  
+    // Get Backblaze file info
+    const b2FileInfo = await this.getB2FileInfo(pdf.fileKey);
+
+    return {
+      ...pdf,
+      storageInfo: b2FileInfo,
+    };
+  }
+
+  async updatePdfById(
+    pdfId: string,
+    req: AuthRequest,
+    updatePdfDto: UpdatePdfDto,
+  ) {
+    if (req.user.role !== 'ADMIN') {
+      throw new BadRequestException('Unauthorized access');
+    }
+
+    const pdf = await this.getpdf('id', pdfId);
+    if (!pdf) {
+      throw new NotFoundException('PDF not found');
+    }
+
+    const updatedPdf = await this.prisma.pDF.update({
+      where: { id: pdfId },
+      data: {
+        ...updatePdfDto,
+      },
+      include: {
+        uploadedBy: true, // Optional: return updated uploader info too
+      },
+    });
+
+    return updatedPdf;
+  }
+
+  // ...existing code...
+  async getTrendingByDownload(threshold: number) {
+    const trendingPDFs = await this.prisma.pDF.findMany({
+      where: {
+        downloads: {
+          some: {}, // at least one download
+        },
+      },
+      include: {
+        _count: {
+          select: { downloads: true },
+        },
+      },
+      orderBy: {
+        downloads: {
+          _count: 'desc',
+        },
+      },
+    });
+
+    // Filter by threshold in JS, since Prisma doesn't support having on relations
+    return trendingPDFs.filter((pdf) => pdf._count.downloads >= threshold);
+  }
+
+  private async getB2FileInfo(fileKey: string) {
+    try {
+      await this.b2.authorize();
+
+      // Step 1: List files and find matching one
+      const listResponse = await this.b2.listFileNames({
+        bucketId: this.configService.get<string>('B2_BUCKET_ID')!,
+        prefix: fileKey,
+        maxFileCount: 1,
+      });
+
+      const matchedFile = listResponse.data.files.find(
+        (file: any) => file.fileName === fileKey,
+      );
+
+      if (!matchedFile) {
+        throw new Error(`File with key "${fileKey}" not found in B2 bucket`);
+      }
+
+      const { fileName, fileId, contentLength, contentType, uploadTimestamp } =
+        matchedFile;
+
+      return {
+        fileId,
+        fileName,
+        sizeInBytes: Number(contentLength),
+        contentType,
+        uploadDate: new Date(Number(uploadTimestamp)),
+      };
+    } catch (error) {
+      console.error(
+        'Failed to get file info from B2:',
+        error?.response?.data || error.message,
+      );
+      throw new BadRequestException(
+        'Could not fetch file information from storage.',
+      );
+    }
+  }
+
+  private async getpdf(
+    by: 'id' | 'title' | 'courseCode' | 'level',
+    value: string,
+  ) {
+    const whereClause = { [by]: value };
+    return this.prisma.pDF.findFirst({ where: whereClause });
+  }
 }

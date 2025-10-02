@@ -4,7 +4,7 @@ import { AcademiceventService } from './academicevent.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Module({
- providers: [AcademiceventService,PrismaService] ,
+  providers: [AcademiceventService, PrismaService],
   controllers: [AcademiceventController],
 })
 export class AcademiceventModule {}

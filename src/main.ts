@@ -5,30 +5,39 @@ import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use(helmet())
-   app.enableCors({
+  app.use(helmet());
+  app.enableCors({
     origin: [
-      "http://localhost:5173", 
-      "https://noun-update-clone-web.onrender.com",
-       "https://www.nounedu.net", // your frontend
+      'http://localhost:5173',
+      'https://noun-update-clone-web.onrender.com',
+      'https://www.nounedu.net', // your frontend
     ],
     credentials: true,
-    allowedHeaders: ["Accept","Authorization","Content-Type","X-Requested-With","apollo-require-preflight"],
-    methods: ["GET","PUT","POST","DELETE","PATCH","OPTIONS"]
-  })
-
-    app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    exceptionFactory: (error) => {
-      const formatedError = error.reduce((acc,_error) => {
-        acc[_error.property] = Object.values(_error.constraints!).join(", ",)
-        return acc
-      },{})
-      throw new BadRequestException(formatedError)
-     }
-  }))
-
+    allowedHeaders: [
+      'Accept',
+      'Authorization',
+      'Content-Type',
+      'X-Requested-With',
+      'apollo-require-preflight',
+    ],
+    methods: ['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
+  });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      exceptionFactory: (error) => {
+        const formatedError = error.reduce((acc, _error) => {
+          acc[_error.property] = Object.values(_error.constraints!).join(', ');
+          return acc;
+        }, {});
+        throw new BadRequestException(formatedError);
+      },
+    }),
+  );
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.log(err);
+  process.exit(1);
+});

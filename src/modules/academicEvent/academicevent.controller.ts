@@ -4,16 +4,11 @@ import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('academicevent')
 export class AcademiceventController {
+  constructor(private readonly academiceventService: AcademiceventService) {}
 
-    constructor(
-        private readonly academiceventService: AcademiceventService
-    ) {}
-
-
-    @Public()
-    @Get("academic-event")
-async getEvent() {
-  return this.academiceventService.getCurrentEvents();
-}
-
+  @Public()
+  @Get('academic-event')
+  async getEvent() {
+    return this.academiceventService.getCurrentEvents();
+  }
 }
