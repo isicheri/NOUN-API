@@ -1,6 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { SupabaseModule } from './supabase/supabase.module';
 import { PrismaService } from './prisma/prisma.service';
 import { ConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -23,7 +22,6 @@ import { OrdersModule } from './modules/orders/Orders.module';
 
 @Module({
   imports: [
-    SupabaseModule,
     ConfigModule.register({ folder: '.' }),
     PrismaModule,
     AcademiceventModule,

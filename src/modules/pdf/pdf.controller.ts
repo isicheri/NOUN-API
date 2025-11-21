@@ -34,7 +34,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 export class PdfController {
   constructor(private readonly pdfService: PdfService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Get()
   async getPdfs(
     @Query('category') category?: PdfCategory,
